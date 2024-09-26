@@ -11,20 +11,36 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Checkout the code
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3  # Use latest stable version
         with:
-          fetch-depth: 0  # Disable shallow clone for better SonarQube analysis
+          fetch-depth: 0  # Fetch all history for SonarQube analysis
 
+      # Verify that SONAR_TOKEN is correctly set (optional step for debugging purposes)
+      - name: Verify SonarQube token is set
+        run: |
+          if [ -z "${{ secrets.SONAR_TOKEN }}" ]; then
+            echo "SONAR_TOKEN is not set"
+            exit 1
+          else
+            echo "SONAR_TOKEN is set"
+          fi
+
+      # Run SonarQube Scan with full debug logging
       - name: SonarQube Scan
         uses: sonarsource/sonarqube-scan-action@master
         env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}  # SonarQube token from GitHub secrets
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}  # SonarQube host URL from GitHub secrets
+        with:
+          args: "-X"  # Enable debug logging for detailed output
 
-      # Ensure the build fails if the Quality Gate does not pass
+      # Check the Quality Gate to ensure the build fails if the Quality Gate fails
       - name: Quality Gate Check
         uses: sonarsource/sonarqube-quality-gate-action@master
         timeout-minutes: 10
         env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}  # SonarQube token from GitHub secrets
+
+      # Optional: Add more build steps here if necessary
